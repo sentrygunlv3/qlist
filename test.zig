@@ -7,7 +7,7 @@ pub fn main() !void {
     var state = ql.QList.init();
     defer state.deinit();
 
-    ql.read(&state, "./example.ql")  catch |e| {
+    ql.read(&state, "./example.qls")  catch |e| {
         print("{}\n", .{e});
 		return;
 	};

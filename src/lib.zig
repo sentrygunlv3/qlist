@@ -5,6 +5,7 @@ const Value = @import("value.zig").Value;
 
 const Error = error{
     InvalidType,
+	NameParseError,
 };
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -41,52 +42,57 @@ pub fn read(ql: *QList, path: []const u8) !void {
 		if (line.len < 1) continue;
 		//print("{s}\n", .{line});
 		const first_char = line[0];
+		var pos: usize = 0;
 		switch (first_char) {
 			'/' => continue,
 			'i' => {
-				const name = parse_name(line) catch {
-					return;
-				};
+				const name = parse_name(&pos, line) catch |e| return e;
+				const line_end = line[pos..];
 
-				try ql.hm.put(name, .{.int = 300});
+				const value = try std.fmt.parseInt(i32, line_end, 10);
+
+				try ql.hm.put(name, .{.int = value});
 			},
 			'f' => {
-				const name = parse_name(line) catch {
-					return;
-				};
+				const name = parse_name(&pos, line) catch |e| return e;
+				const line_end = line[pos..];
 
-				try ql.hm.put(name, .{.float = 300.5});
+				const value = try std.fmt.parseFloat(f32, line_end);
+
+				try ql.hm.put(name, .{.float = value});
 			},
 			's' => {
-				const name = parse_name(line) catch {
-					return;
-				};
+				const name = parse_name(&pos, line) catch |e| return e;
+				const line_end = line[pos..];
 
-				try ql.hm.put(name, .{.string = "hello"});
+				try ql.hm.put(name, .{.string = try allocator.dupe(u8, line_end)});
 			},
 			'b' => {
-				const name = parse_name(line) catch {
-					return;
-				};
+				const name = parse_name(&pos, line) catch |e| return e;
+				const line_end = line[pos..];
 
-				try ql.hm.put(name, .{.bool = true});
+				var value = false;
+				if (line_end[0] == 't') {
+					value = true;
+				}
+
+				try ql.hm.put(name, .{.bool = value});
 			},
 			else => return Error.InvalidType
 		}
 	}
 }
 
-fn parse_name(str: []const u8) ![]const u8 {
-	if (str.len <= 2) return "";
+fn parse_name(pos: *usize, str: []const u8) ![]const u8 {
+	if (str.len <= 2) return Error.NameParseError;
 
-	const end = str[2..];
-	//print("  {s}\n", .{end});
+	const slice = str[2..];
 
-	if (std.mem.indexOfScalar(u8, end, ' ')) |pos| {
-		//print("  {s}\n", .{end[0..pos]});
-		const name = end[0..pos];
+	if (std.mem.indexOfScalar(u8, slice, ' ')) |end| {
+		const name = slice[0..end];
+		pos.* = end + 3;
 		return try allocator.dupe(u8, name);
 	} else {
-		return end;
+		return Error.NameParseError;
 	}
 }

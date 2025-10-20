@@ -2,8 +2,11 @@
 i my_int 100
 
 
-f my_float 14
+f my_float 14.2
 s string hello world!!!
 b boolean t
 
+
 / comment 2
+s string_2 second string  tab test"%#&#¤&
+
