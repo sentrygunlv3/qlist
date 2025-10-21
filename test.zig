@@ -4,11 +4,14 @@ const print = std.debug.print;
 const ql = @import("src/lib.zig");
 
 pub fn main() !void {
-    var state = ql.QList.init();
-    defer state.deinit();
+	var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+	const allocator = gpa.allocator();
 
-    ql.read(&state, "./example.qls")  catch |e| {
-        print("{}\n", .{e});
+	var state = ql.QList.init(allocator);
+	defer state.deinit();
+
+	ql.read(&state, "./example.qls")  catch |e| {
+		print("{}\n", .{e});
 		return;
 	};
 

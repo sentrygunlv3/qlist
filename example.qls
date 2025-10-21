@@ -6,6 +6,12 @@ f my_float 14.2
 s string hello world!!!
 b boolean t
 
+/ multiline string test
+S multiline_str 2
+i am a 
+test
+/ end
+
 
 / comment 2
 s string_2 second string  tab test"%#&#¤&
