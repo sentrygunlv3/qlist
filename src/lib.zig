@@ -1,34 +1,9 @@
 const std = @import("std");
 const print = std.debug.print;
-const Allocator = std.mem.Allocator;
 
 const Value = @import("value.zig").Value;
-
-const Error = error{
-	InvalidType,
-	NameParseError,
-	InvalidLineCount,
-};
-
-pub const QList = struct {
-	allocator: Allocator,
-	hm: std.StringHashMap(Value),
-
-	pub fn init(allocator: Allocator) QList {
-		return .{
-			.allocator = allocator,
-			.hm = std.StringHashMap(Value).init(allocator),
-		};
-	}
-
-	pub fn deinit(self: *QList) void {
-		var iterator = self.hm.iterator();
-		while (iterator.next()) |item| {
-			self.allocator.free(item.key_ptr.*);
-		}
-		self.hm.deinit();
-	}
-};
+pub const QList = @import("value.zig").QList;
+const Error = @import("value.zig").Error;
 
 pub fn read(ql: *QList, path: []const u8) !void {
 	var file = std.fs.cwd().openFile(path, .{}) catch |e| {
@@ -101,7 +76,7 @@ pub fn read(ql: *QList, path: []const u8) !void {
 
 				try ql.hm.put(name, .{.bool = value});
 			},
-			else => return Error.InvalidType
+			else => return Error.InvalidType,
 		}
 	}
 }
@@ -117,5 +92,37 @@ fn parse_name(ql: *QList, pos: *usize, str: []const u8) ![]const u8 {
 		return try ql.allocator.dupe(u8, name);
 	} else {
 		return Error.NameParseError;
+	}
+}
+
+pub fn write(ql: *QList, path: []const u8) !void {
+	var file = std.fs.cwd().createFile(path, .{}) catch |e| {
+		return e;
+	};
+	defer file.close();
+
+	var writer = file.deprecatedWriter();
+	
+	var iterator = ql.hm.iterator();
+	while (iterator.next()) |item| {
+		switch (item.value_ptr.*) {
+			.int => try writer.print("i {s} {d}\n", .{item.key_ptr.*, item.value_ptr.int}),
+			.float => try writer.print("f {s} {d}\n", .{item.key_ptr.*, item.value_ptr.float}),
+			.bool => {
+				if (item.value_ptr.bool) {
+					try writer.print("b {s} t\n", .{item.key_ptr.*});
+				} else {
+					try writer.print("b {s} f\n", .{item.key_ptr.*});
+				}
+			},
+			.string => {
+				const count = std.mem.count(u8, item.value_ptr.string, "\n");
+				if (count > 0) {
+					try writer.print("S {s} {d}\n{s}\n", .{item.key_ptr.*, count + 1, item.value_ptr.string});
+				} else {
+					try writer.print("s {s} {s}\n", .{item.key_ptr.*, item.value_ptr.string});
+				}
+			},
+		}
 	}
 }

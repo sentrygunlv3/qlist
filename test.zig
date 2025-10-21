@@ -19,4 +19,9 @@ pub fn main() !void {
 	while (iterator.next()) |item| {
 		print("{s} = {f}\n", .{ item.key_ptr.*, item.value_ptr.* });
 	}
+
+	ql.write(&state, "./write.qls")  catch |e| {
+		print("{}\n", .{e});
+		return;
+	};
 }

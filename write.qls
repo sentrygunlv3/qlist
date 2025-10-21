@@ -1,0 +1,8 @@
+s string hello world!!!
+S multiline_str 2
+i am a 
+test
+b boolean t
+f my_float 14.2
+s string_2 second string  tab test"%#&#¤&
+i my_int 100
